@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Vibration & Thermal Monitor — Heltec LoRa</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060b;--card:#10101c;--border:#1a1a2e;--accent:#00d4aa;--accent2:#0066ff;--text:#e0e0ea;--dim:#5a5a72;--green:#00d4aa;--red:#ff4757;--yellow:#ffa502;--gold:#ffd700}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;line-height:1.6;overflow-x:hidden}
+.top-nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(6,6,11,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;height:48px;gap:12px}
+.nav-logo{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase}
+.nav-tabs{display:flex;gap:3px;margin-left:16px}
+.nav-tab{background:0;border:1px solid transparent;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;transition:.2s}
+.nav-tab:hover{color:var(--text);border-color:var(--border)}
+.nav-tab.active{background:var(--accent);color:#06060b;border-color:var(--accent);font-weight:600}
+.page{display:none;padding-top:48px}.page.active{display:block}
+#viewer-page{height:100vh;position:relative}
+#c3d{position:absolute;top:48px;left:0;right:0;bottom:0}
+.ov{position:fixed;z-index:10;pointer-events:none}.ov>*{pointer-events:auto}
+.ov-tl{top:60px;left:20px}.ov-tr{top:60px;right:20px}.ov-bl{bottom:20px;left:20px}.ov-br{bottom:20px;right:20px}.ov-bc{bottom:16px;left:50%;transform:translateX(-50%)}
+.pnl{background:rgba(16,16,26,.92);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px}
+.pnl-label{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.btn-row{display:flex;gap:3px;flex-wrap:wrap}
+.btn{background:0;border:1px solid var(--border);color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:9px;padding:4px 9px;border-radius:4px;cursor:pointer;transition:.2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#0a0a0f;font-weight:600}
+.sld{-webkit-appearance:none;width:100%;height:2px;background:var(--border);border-radius:2px;outline:0;margin-top:6px}
+.sld::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;background:var(--accent);border-radius:50%;cursor:pointer}
+.v-title{font-size:20px;font-weight:700;background:linear-gradient(135deg,#fff,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.v-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);margin-top:2px;letter-spacing:1px}
+.v-dims{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);text-align:right;line-height:1.6}
+.v-dims .vl{color:var(--accent)}
+.v-hint{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:1px;opacity:.5}
+.comp-list .ci{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(30,30,46,.5);cursor:pointer;font-size:10px;transition:.2s}
+.comp-list .ci:last-child{border:0}.ci:hover{color:#fff}
+.ci .cd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ci .cs{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-left:auto}
+.container{max-width:1100px;margin:0 auto;padding:30px 20px}
+.stitle{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:24px 0}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.sc .sl{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.sc .sv{font-size:20px;font-weight:700}
+.sc .sb{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin:5px 0 2px}
+.sc .sf{height:100%;border-radius:2px}
+.sc .sd{font-size:9px;color:var(--dim)}
+.bt{width:100%;border-collapse:separate;border-spacing:0 3px}
+.bt th{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:6px 10px;text-align:left}
+.bt td{background:var(--card);padding:10px;font-size:11px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.bt td:first-child{border-left:1px solid var(--border);border-radius:5px 0 0 5px}
+.bt td:last-child{border-right:1px solid var(--border);border-radius:0 5px 5px 0}
+.bt tr.b td{border-left:3px solid var(--green)}.bt tr.p td{border-left:3px solid var(--yellow)}.bt tr.f td{opacity:.5}
+.tag{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:1px;padding:2px 6px;border-radius:3px;font-weight:600}
+.tg{background:rgba(0,212,170,.15);color:var(--green)}.to{background:rgba(0,102,255,.15);color:var(--accent2)}.tp{background:rgba(255,165,2,.15);color:var(--yellow)}.tf{background:rgba(90,90,114,.15);color:var(--dim)}
+.bsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:12px}
+.bsc{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.bsc .bl{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.bsc .bv{font-size:18px;font-weight:700}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.dg{background:var(--green)}.dy{background:var(--yellow)}.dr{background:var(--red)}
+.phase{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:6px;position:relative;overflow:hidden}
+.phase::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.ph1::before{background:var(--green)}.ph2::before{background:var(--yellow)}.ph3::before{background:var(--accent2)}.ph4::before{background:var(--gold)}
+.phd{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.phn{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:1px}
+.pn1{background:rgba(0,212,170,.15);color:var(--green)}.pn2{background:rgba(255,165,2,.15);color:var(--yellow)}.pn3{background:rgba(0,102,255,.15);color:var(--accent2)}.pn4{background:rgba(255,215,0,.15);color:var(--gold)}
+.pht{font-size:14px;font-weight:600}
+.phm{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--dim);margin-left:auto}
+.phg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px}
+.phi{display:flex;gap:6px;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:5px;border:1px solid rgba(255,255,255,.03);font-size:10px}
+.phi strong{color:#fff;display:block;margin-bottom:1px}.phi span{color:var(--dim);font-size:9px}
+.wbox{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:20px 0}
+.wbox pre{font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.5;color:var(--dim);white-space:pre}
+.hbox{background:linear-gradient(135deg,rgba(0,212,170,.06),rgba(0,102,255,.06));border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:16px;margin:20px 0}
+.hbox h3{font-size:14px;margin-bottom:6px;color:#fff}.hbox p{font-size:11px;color:var(--dim);line-height:1.6}
+@media(max-width:768px){.scores{grid-template-columns:1fr 1fr}.phg{grid-template-columns:1fr}.ov-tr{display:none}}
+</style>
+</head>
+<body>
+<nav class="top-nav">
+<div class="nav-logo">IoT Monitor</div>
+<div class="nav-tabs">
+<button class="nav-tab active" onclick="go('viewer')">3D Enclosure</button>
+<button class="nav-tab" onclick="go('tracker')">Tracker</button>
+<button class="nav-tab" onclick="go('wiring')">Wiring</button>
+<button class="nav-tab" onclick="go('compare')">vs Tractian</button>
+</div>
+</nav>
+
+<!-- 3D -->
+<div id="viewer-page" class="page active"><div id="c3d"></div>
+<div class="ov ov-tl"><div class="v-title">Vibration & Thermal Monitor</div><div class="v-sub">Heltec LoRa 32 V2 · ADXL345 · MAX6675 · ER14505 · AMS1117</div></div>
+<div class="ov ov-tr"><div class="v-dims">Case Patola: <span class="vl">82×42×29mm</span><br>Internal: <span class="vl">~78×38×25mm</span><br>Gland: <span class="vl">PG7</span><br>PCB: <span class="vl">5×7cm perfurada</span></div></div>
+<div class="ov ov-bl">
+<div class="pnl"><div class="pnl-label">View</div><div class="btn-row"><button class="btn on" onclick="setView('solid',this)">Solid</button><button class="btn" onclick="setView('wire',this)">Wire</button><button class="btn" onclick="setView('xray',this)">X-Ray</button></div></div>
+<div class="pnl"><div class="pnl-label">Lid</div><div class="btn-row"><button class="btn on" onclick="setLid(false,this)">Closed</button><button class="btn" onclick="setLid(true,this)">Open</button></div><div class="pnl-label" style="margin-top:6px">Explode</div><input type="range" class="sld" min="0" max="100" value="0" oninput="EX=this.value/100"></div>
+</div>
+<div class="ov ov-br"><div class="pnl comp-list"><div class="pnl-label">Components</div>
+<div class="ci" onmouseenter="HL='heltec'" onmouseleave="HL=null"><div class="cd" style="background:#00d4aa"></div>Heltec LoRa 32 V2<div class="cs">50×25mm</div></div>
+<div class="ci" onmouseenter="HL='oled'" onmouseleave="HL=null"><div class="cd" style="background:#00aaff"></div>OLED 0.96" SSD1306<div class="cs">integrado</div></div>
+<div class="ci" onmouseenter="HL='acc'" onmouseleave="HL=null"><div class="cd" style="background:#ff6b6b"></div>ADXL345<div class="cs">20×16mm</div></div>
+<div class="ci" onmouseenter="HL='thm'" onmouseleave="HL=null"><div class="cd" style="background:#ffd93d"></div>MAX6675 V1.2<div class="cs">20×15mm</div></div>
+<div class="ci" onmouseenter="HL='bat'" onmouseleave="HL=null"><div class="cd" style="background:#4488ff"></div>ER14505 3.6V<div class="cs">Ø14×50mm</div></div>
+<div class="ci" onmouseenter="HL='reg'" onmouseleave="HL=null"><div class="cd" style="background:#cc66ff"></div>AMS1117-3.3V<div class="cs">SOT-223</div></div>
+<div class="ci" onmouseenter="HL='gld'" onmouseleave="HL=null"><div class="cd" style="background:#ff8800"></div>Cable Gland PG7<div class="cs">termopar</div></div>
+<div class="ci" onmouseenter="HL='pcb'" onmouseleave="HL=null"><div class="cd" style="background:#33aa55"></div>Placa Perfurada<div class="cs">5×7cm</div></div>
+</div></div>
+<div class="ov ov-bc"><div class="v-hint">Drag to rotate · Scroll to zoom</div></div>
+</div>
+
+<!-- TRACKER -->
+<div id="tracker-page" class="page"><div class="container">
+<div class="stitle" style="margin-top:16px">Project Progress — 10 Feb 2026</div>
+<div class="scores">
+<div class="sc"><div class="sl">Hardware</div><div class="sv" style="color:var(--green)">70%</div><div class="sb"><div class="sf" style="width:70%;background:var(--green)"></div></div><div class="sd">Heltec LoRa + sensores + bat + PCB</div></div>
+<div class="sc"><div class="sl">Firmware</div><div class="sv" style="color:var(--red)">10%</div><div class="sb"><div class="sf" style="width:10%;background:var(--red)"></div></div><div class="sd">Prompt gerado</div></div>
+<div class="sc"><div class="sl">Comm</div><div class="sv" style="color:var(--green)">70%</div><div class="sb"><div class="sf" style="width:70%;background:var(--green)"></div></div><div class="sd">WiFi+LoRa+BLE integrados!</div></div>
+<div class="sc"><div class="sl">Enclosure</div><div class="sv" style="color:var(--yellow)">20%</div><div class="sb"><div class="sf" style="width:20%;background:var(--yellow)"></div></div><div class="sd">Patola 82×42 + 3D model</div></div>
+<div class="sc"><div class="sl">Platform</div><div class="sv" style="color:var(--red)">0%</div><div class="sb"><div class="sf" style="width:0%;background:var(--red)"></div></div><div class="sd">Fase 3</div></div>
+</div>
+
+<div class="hbox" style="border-color:rgba(0,212,170,.4)">
+<h3>🚀 Upgrade: Heltec WiFi LoRa 32 V2</h3>
+<p>Com o Heltec, o projeto pula direto para Fase 2. ESP32 + LoRa 915MHz + OLED + WiFi + BLE em uma placa só. Não precisa mais do ESP32 DevKit separado nem comprar módulo LoRa. Comunicação sobe de 25% → 70%, hardware de 55% → 70%.</p>
+</div>
+
+<div class="stitle">Bill of Materials</div>
+<table class="bt"><thead><tr><th>Item</th><th>Modelo</th><th>Qtd</th><th>Preço</th><th>Status</th></tr></thead><tbody>
+<tr class="b"><td>MCU+LoRa+OLED</td><td>Heltec WiFi LoRa 32 V2 (915MHz)</td><td>1</td><td>~R$90</td><td><span class="tag to">✓ TEM</span></td></tr>
+<tr class="b"><td>Termopar</td><td>MAX6675 V1.2 + Tipo K rosca</td><td>1</td><td>~R$25</td><td><span class="tag to">✓ TEM</span></td></tr>
+<tr class="b"><td>Acelerômetro</td><td>ADXL345 breakout I2C</td><td>1</td><td>~R$20</td><td><span class="tag to">✓ TEM</span></td></tr>
+<tr class="b"><td>Bateria</td><td>ER14505 Li-SOCl2 3.6V 2400mAh</td><td>2</td><td>R$73,52</td><td><span class="tag tg">✓ COMPROU</span></td></tr>
+<tr class="b"><td>Regulador</td><td>AMS1117-3.3V SOT-223 (×20)</td><td>20</td><td>R$27,45</td><td><span class="tag tg">✓ COMPROU</span></td></tr>
+<tr class="b"><td>Placa Perfurada</td><td>Fenolite ilhada 5×7cm (×10)</td><td>10</td><td>~R$18</td><td><span class="tag tg">✓ COMPROU</span></td></tr>
+<tr class="b"><td>ESP32 DevKit</td><td>DevKit V1 30p (reserva/gateway)</td><td>1</td><td>~R$35</td><td><span class="tag to">✓ TEM</span></td></tr>
+<tr class="p"><td>Patola Case</td><td>82×42×29mm</td><td>1</td><td>~R$12</td><td><span class="tag tp">COMPRAR</span></td></tr>
+<tr class="p"><td>Cable Gland</td><td>PG7 (furo Ø12mm)</td><td>1</td><td>~R$5</td><td><span class="tag tp">COMPRAR</span></td></tr>
+<tr class="p"><td>Ferro de Solda</td><td>60W c/ controle temp</td><td>1</td><td>~R$50</td><td><span class="tag tp">COMPRAR</span></td></tr>
+<tr class="p"><td>Estanho+Flux</td><td>0.8mm 50g + pasta flux</td><td>1</td><td>~R$23</td><td><span class="tag tp">COMPRAR</span></td></tr>
+<tr class="p"><td>Fio Wire Wrap</td><td>30AWG (trilhas na PCB)</td><td>1</td><td>~R$10</td><td><span class="tag tp">COMPRAR</span></td></tr>
+<tr class="f"><td>Accel Pro</td><td>IIS3DWB 6.3kHz</td><td>1</td><td>~R$85</td><td><span class="tag tf">FASE 2</span></td></tr>
+</tbody></table>
+<div class="bsum">
+<div class="bsc"><div class="bl">Investido</div><div class="bv" style="color:var(--green)">R$289</div></div>
+<div class="bsc"><div class="bl">Falta F1</div><div class="bv" style="color:var(--yellow)">~R$100</div></div>
+<div class="bsc"><div class="bl">Total Projeto</div><div class="bv" style="color:var(--gold)">~R$474</div></div>
+</div>
+
+<div class="stitle" style="margin-top:30px">Roadmap</div>
+<div class="phase ph1"><div class="phd"><span class="phn pn1">FASE 1 — AGORA</span><span class="pht">Protótipo Funcional</span><span class="phm">2-3 SEM</span></div><div class="phg">
+<div class="phi">✅ <div><strong>Heltec LoRa 32 V2</strong><span>ESP32+LoRa+OLED+WiFi+BLE em 1 placa</span></div></div>
+<div class="phi">✅ <div><strong>Sensores + Bateria + Regulador</strong><span>MAX6675+ADXL345+ER14505+AMS1117</span></div></div>
+<div class="phi">✅ <div><strong>Placa perfurada 5×7cm</strong><span>10 unidades para montar protótipos</span></div></div>
+<div class="phi">⏳ <div><strong>Ferro solda + estanho + fio</strong><span>Para soldar tudo na placa perfurada</span></div></div>
+<div class="phi">⏳ <div><strong>Patola 82×42 + cable gland PG7</strong><span>Case final do protótipo</span></div></div>
+<div class="phi">⏳ <div><strong>Firmware PlatformIO</strong><span>Sensores, FFT, OLED display, LoRa TX, deep sleep</span></div></div>
+</div></div>
+<div class="phase ph2"><div class="phd"><span class="phn pn2">FASE 2</span><span class="pht">Upgrade Sensores</span><span class="phm">3-4 SEM</span></div><div class="phg">
+<div class="phi">🔧 <div><strong>ADXL345→IIS3DWB</strong><span>6.3kHz análise rolamentos</span></div></div>
+<div class="phi">🔋 <div><strong>AMS1117→HT7333</strong><span>4µA quiescent p/ 3 anos bateria</span></div></div>
+</div></div>
+<div class="phase ph3"><div class="phd"><span class="phn pn3">FASE 3</span><span class="pht">Gateway+Plataforma</span><span class="phm">4-6 SEM</span></div><div class="phg">
+<div class="phi">📦 <div><strong>Gateway LoRa→Cloud</strong><span>ESP32 DevKit + LoRa RX + 4G/WiFi via MQTT</span></div></div>
+<div class="phi">☁️ <div><strong>Backend Laravel</strong><span>TimescaleDB, REST API, webhooks</span></div></div>
+<div class="phi">📱 <div><strong>Dashboard+App</strong><span>Espectros, alertas, gestão ativos</span></div></div>
+</div></div>
+<div class="phase ph4"><div class="phd"><span class="phn pn4">FASE 4</span><span class="pht">Produtização</span><span class="phm">8-12 SEM</span></div><div class="phg">
+<div class="phi">🧠 <div><strong>ML</strong><span>Detecção anomalias</span></div></div>
+<div class="phi">🖨️ <div><strong>PCB custom</strong><span>Placa única</span></div></div>
+<div class="phi">📜 <div><strong>ANATEL + Go-to-Market</strong><span>~R$150-200/un em escala</span></div></div>
+</div></div>
+</div></div>
+
+<!-- WIRING -->
+<div id="wiring-page" class="page"><div class="container">
+<div class="stitle" style="margin-top:16px">Pinagem — Heltec WiFi LoRa 32 V2</div>
+<div class="hbox">
+<h3>⚠️ Pinos Reservados (LoRa + OLED)</h3>
+<p>OLED: SDA=GPIO4, SCL=GPIO15, RST=GPIO16<br>
+LoRa: SCK=GPIO5, MISO=GPIO19, MOSI=GPIO27, CS=GPIO18, RST=GPIO14, DIO0=GPIO26<br>
+Não usar esses pinos para sensores!</p>
+</div>
+<div class="wbox"><pre>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  ALIMENTAÇÃO</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  <span style="color:#ff4757">ER14505 (+) 3.6V</span> ── Cap 10µF ── <span style="color:#ffa502">AMS1117 [IN]</span>
+  <span style="color:#ffa502">AMS1117 [OUT] 3.3V</span> ── Cap 10µF ── <span style="color:#00d4aa">Heltec [3V3]</span>
+  <span style="color:#ff4757">ER14505 (-)</span> ── <span style="color:#ffa502">AMS1117 [GND]</span> ── <span style="color:#00d4aa">Heltec [GND]</span>
+
+  USB: Para dev/debug, usar micro-USB do Heltec direto.
+
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  MAX6675 V1.2 → SPI Manual (pinos livres)</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  <span style="color:#ffa502">MAX6675 VCC</span>  ───  <span style="color:#00d4aa">Heltec 3V3</span>
+  <span style="color:#ffa502">MAX6675 GND</span>  ───  <span style="color:#00d4aa">Heltec GND</span>
+  <span style="color:#ffa502">MAX6675 SCK</span>  ───  <span style="color:#00d4aa">Heltec GPIO 17</span>
+  <span style="color:#ffa502">MAX6675 CS </span>  ───  <span style="color:#00d4aa">Heltec GPIO 23</span>
+  <span style="color:#ffa502">MAX6675 SO </span>  ───  <span style="color:#00d4aa">Heltec GPIO 13</span>
+
+  Terminal: <span style="color:#00d4aa">Azul (+)</span> / <span style="color:#ff4757">Vermelho (-)</span> ← Termopar K
+  Probe rosca → máquina (via cable gland PG7)
+
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  ADXL345 → I2C (pinos livres)</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  <span style="color:#ffa502">ADXL345 VCC</span>  ───  <span style="color:#00d4aa">Heltec 3V3</span>
+  <span style="color:#ffa502">ADXL345 GND</span>  ───  <span style="color:#00d4aa">Heltec GND</span>
+  <span style="color:#ffa502">ADXL345 SDA</span>  ───  <span style="color:#00d4aa">Heltec GPIO 21</span>
+  <span style="color:#ffa502">ADXL345 SCL</span>  ───  <span style="color:#00d4aa">Heltec GPIO 22</span>
+
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  DISPLAY OLED (já integrado, automático)</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  SDA = GPIO 4  (interno)
+  SCL = GPIO 15 (interno)
+  RST = GPIO 16 (interno)
+  Lib: SSD1306Wire ou U8g2
+
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  LoRa 915MHz (já integrado, automático)</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  SCK=5, MISO=19, MOSI=27, CS=18, RST=14, DIO0=26
+  Lib: LoRa.h (Sandeep Mistry)
+
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+<span style="color:#fff">  LAYOUT NA PLACA PERFURADA 5×7cm → Patola 82×42×29</span>
+<span style="color:#fff">═══════════════════════════════════════════════════════</span>
+
+  Placa cortada: ~76×36mm (cabe na Patola com folga)
+
+  ┌──────────────────────────── 76mm ────────────────────┐
+  │                                                       │
+  │  ┌──────────────────────┐  ┌──────┐                  │ 36mm
+  │  │  Heltec LoRa 32 V2  │  │ADXL  │                  │
+  │  │  (OLED pra cima)     │  │345   │                  │
+  │  │  50×25mm             │  └──────┘                  │
+  │  └──────────────────────┘  ┌──────┐                  │
+  │                            │MAX   │←terminal block   │
+  │  ┌──────────────────┐     │6675  │                  │
+  │  │  ER14505 bateria │     └──┬───┘                  │
+  │  │  (deitada Ø14×50)│        │                       │
+  │  └──────────────────┘        │                       │
+  │  [AMS] [C] [C]              │                       │
+  ├────────────────────────[gland PG7]───────────────────┤
+  └──────────────────────────────────────────────────────┘
+                                 │ cabo termopar
+                            probe rosca
+                             (na máquina)
+
+  Altura empilhada:
+  Placa perfurada:     1.6mm
+  Heltec (com pinos):  ~8mm
+  Bateria ao lado:     Ø14mm
+  ─────────────────────────────
+  Máximo:              ~16mm  ← cabe nos 25mm internos ✓
+</pre></div>
+</div></div>
+
+<!-- COMPARE -->
+<div id="compare-page" class="page"><div class="container">
+<div class="stitle" style="margin-top:16px">Seu Projeto vs Tractian Smart Trac</div>
+<table class="bt"><thead><tr><th>Spec</th><th>Smart Trac</th><th>Seu Projeto (Heltec)</th><th>Gap</th></tr></thead><tbody>
+<tr><td>Freq.Vibração</td><td>0-32kHz</td><td>ADXL345 ~1.6kHz → IIS3DWB 6.3kHz</td><td><span class="dot dy"></span>20→50%</td></tr>
+<tr><td>Aceleração</td><td>±16g</td><td>ADXL345 ±16g ✓</td><td><span class="dot dg"></span>100%</td></tr>
+<tr><td>Temperatura</td><td>-40 a +120°C</td><td>MAX6675 0-1024°C ✓</td><td><span class="dot dg"></span>100%</td></tr>
+<tr><td>Comunicação</td><td>915MHz ISM, 1km</td><td>Heltec LoRa 915MHz, 1-5km ✓</td><td><span class="dot dg"></span>95%</td></tr>
+<tr><td>Display</td><td>Via app/web</td><td>OLED 0.96" local + web</td><td><span class="dot dg"></span>🏆 bônus</td></tr>
+<tr><td>Bateria</td><td>Li, 3 anos</td><td>ER14505 2400mAh 1.5-3 anos ✓</td><td><span class="dot dg"></span>90%</td></tr>
+<tr><td>IP</td><td>IP69K</td><td>Patola selada → IP54-65</td><td><span class="dot dy"></span>60%</td></tr>
+<tr><td>FFT</td><td>32k linhas</td><td>ESP32 4096pt (firmware)</td><td><span class="dot dr"></span>0→40%</td></tr>
+<tr><td>Offline</td><td>250 coletas</td><td>SPIFFS/LittleFS</td><td><span class="dot dr"></span>0→100%</td></tr>
+<tr><td>ML</td><td>Sim</td><td>Fase 4</td><td><span class="dot dr"></span>0%</td></tr>
+<tr><td>Plataforma</td><td>Web+iOS+Android</td><td>Fase 3 Laravel</td><td><span class="dot dr"></span>0%</td></tr>
+<tr><td>Custo</td><td>R$300-500/mês</td><td>~R$260 único</td><td><span class="dot dg"></span>🏆</td></tr>
+</tbody></table>
+<div class="hbox" style="margin-top:24px;border-color:rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.05),rgba(0,102,255,.05))">
+<h3>🎯 Upgrade com Heltec</h3>
+<p>Comunicação saiu de 30% → 95% sem comprar nada. LoRa 915MHz integrado iguala o alcance do Smart Trac. OLED é bônus que a Tractian não tem no device. Custo por unidade caiu para ~R$260.</p>
+</div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var HL=null,EX=0,VIEW='solid',LID_OPEN=false;
+function go(p){
+  document.querySelectorAll('.nav-tab').forEach(function(t,i){t.classList.toggle('active',['viewer','tracker','wiring','compare'][i]===p)});
+  document.querySelectorAll('.page').forEach(function(s){s.classList.remove('active')});
+  document.getElementById(p+'-page').classList.add('active');
+  if(p==='viewer'&&!window._3d)init3D();
+}
+function setView(v,el){VIEW=v;el.parentElement.querySelectorAll('.btn').forEach(function(b){b.classList.remove('on')});el.classList.add('on')}
+function setLid(o,el){LID_OPEN=o;el.parentElement.querySelectorAll('.btn').forEach(function(b){b.classList.remove('on')});el.classList.add('on')}
+
+function init3D(){
+window._3d=true;
+var T=THREE,box=document.getElementById('c3d'),W=box.clientWidth,H=box.clientHeight;
+var scene=new T.Scene();scene.background=new T.Color(0x08080f);
+var cam=new T.PerspectiveCamera(36,W/H,0.1,800);
+var ren=new T.WebGLRenderer({antialias:true});
+ren.setSize(W,H);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+ren.shadowMap.enabled=true;ren.toneMapping=T.ACESFilmicToneMapping;ren.toneMappingExposure=1.8;
+box.appendChild(ren.domElement);
+
+scene.add(new T.AmbientLight(0x9999bb,1.0));
+var dl=new T.DirectionalLight(0xffffff,1.5);dl.position.set(50,80,50);dl.castShadow=true;scene.add(dl);
+var dl2=new T.DirectionalLight(0x00d4aa,0.5);dl2.position.set(-40,60,-30);scene.add(dl2);
+var dl3=new T.DirectionalLight(0x0066ff,0.35);dl3.position.set(0,-10,50);scene.add(dl3);
+var dl4=new T.DirectionalLight(0xffffff,0.7);dl4.position.set(-50,40,60);scene.add(dl4);
+var pl=new T.PointLight(0xffffff,0.6,300);pl.position.set(0,60,0);scene.add(pl);
+var grid=new T.GridHelper(200,40,0x181828,0x181828);grid.position.y=-22;scene.add(grid);
+
+var root=new T.Group();scene.add(root);
+var CW=82,CD=42,HB=21,HL2=8,WL=2;
+
+function mk(w,h,d,c,n){var m=new T.Mesh(new T.BoxGeometry(w,h,d),c.clone());if(n)m.name=n;return m}
+function mkAt(m,x,y,z){m.position.set(x,y,z);return m}
+function cyl(rt,rb,h,seg,mat){return new T.Mesh(new T.CylinderGeometry(rt,rb,h,seg),mat.clone())}
+
+var matC=new T.MeshStandardMaterial({color:0x3a3a4e,metalness:0.08,roughness:0.3});
+var matIn=new T.MeshStandardMaterial({color:0x1e1e30,roughness:0.7});
+var matSc=new T.MeshStandardMaterial({color:0x888888,metalness:0.9,roughness:0.1});
+var matGold=new T.MeshStandardMaterial({color:0xccaa44,metalness:0.85});
+var matMetal=new T.MeshStandardMaterial({color:0xbbbbbb,metalness:0.9,roughness:0.15});
+var matChip=new T.MeshStandardMaterial({color:0x111111,metalness:0.5,roughness:0.2});
+
+// Case
+var caseBase=mk(CW,HB,CD,matC,'case');caseBase.castShadow=true;root.add(caseBase);
+root.add(mk(CW-WL*2,HB-WL,CD-WL*2,matIn,'case'));
+
+// Lid
+var lid=mk(CW,HL2,CD,matC,'lid');lid.position.set(0,HB/2+HL2/2,0);lid.castShadow=true;root.add(lid);
+var label=mk(28,0.3,6,new T.MeshStandardMaterial({color:0x00d4aa,emissive:0x00d4aa,emissiveIntensity:0.2}),'lid');label.position.set(0,HB/2+HL2+0.2,0);root.add(label);
+var i;
+for(i=0;i<5;i++){var v=mk(1,HL2+1,3.5,new T.MeshBasicMaterial({color:0x08080f}),'lid');v.position.set(CW/2-0.3,HB/2+HL2/2,-8+i*4);root.add(v)}
+
+// Screws
+var sp=[[-CW/2+6,0,-CD/2+6],[CW/2-6,0,-CD/2+6],[-CW/2+6,0,CD/2-6],[CW/2-6,0,CD/2-6]];
+sp.forEach(function(p){
+  var pil=cyl(2.5,2.5,HB-WL*2,8,matC);pil.position.set(p[0],-3,p[2]);root.add(pil);
+  var sc=cyl(1.8,1.8,1.2,6,matSc);sc.position.set(p[0],HB/2+HL2+0.6,p[2]);sc.name='screw';root.add(sc);
+});
+
+// === PERFBOARD ===
+var pcbG=new T.Group();pcbG.name='pcb';
+pcbG.add(mk(76,1.4,36,new T.MeshStandardMaterial({color:0x8B6914,roughness:0.6,metalness:0.1})));
+for(var px2=-35;px2<=35;px2+=5)for(var pz=-16;pz<=16;pz+=5){
+  var dot=cyl(0.5,0.5,0.1,6,matGold);dot.position.set(px2,0.75,pz);pcbG.add(dot);
+}
+pcbG.position.set(0,-HB/2+WL+1.5,0);root.add(pcbG);
+
+// === HELTEC LORA 32 V2 ===
+var heltec=new T.Group();heltec.name='heltec';
+heltec.add(mk(50,1.4,25.5,new T.MeshStandardMaterial({color:0x111118,roughness:0.4,metalness:0.2})));
+var wroom=mk(18,3,16,new T.MeshStandardMaterial({color:0x999999,metalness:0.9,roughness:0.12}));wroom.position.set(10,2.2,0);heltec.add(wroom);
+var ant=mk(5,0.2,14,new T.MeshStandardMaterial({color:0x222222}));ant.position.set(22,0.9,0);heltec.add(ant);
+for(i=0;i<4;i++){var at=mk(2.5,0.1,0.3,matGold);at.position.set(22,1,-4.5+i*3);heltec.add(at)}
+var loraChip=mk(4,1,4,new T.MeshStandardMaterial({color:0x222222,metalness:0.3,roughness:0.3}));loraChip.position.set(-5,1.2,8);heltec.add(loraChip);
+var oled=mk(25,1.5,13,new T.MeshStandardMaterial({color:0x050510,roughness:0.1,metalness:0.3}));oled.position.set(-8,2,0);heltec.add(oled);
+var oledScreen=mk(22,0.1,10,new T.MeshStandardMaterial({color:0x00bbff,emissive:0x00aaff,emissiveIntensity:0.6}));oledScreen.position.set(-8,2.8,0);oledScreen.name='oled';heltec.add(oledScreen);
+var usb=mk(5.5,2.2,7,new T.MeshStandardMaterial({color:0x999999,metalness:0.85,roughness:0.1}));usb.position.set(-23,1.2,0);heltec.add(usb);
+for(var s=-1;s<=1;s+=2)for(i=0;i<14;i++){var pin=mk(0.5,3,0.5,matGold);pin.position.set(-18+i*2.8,-0.5,s*11.5);heltec.add(pin)}
+var hled=mk(0.8,0.4,0.5,new T.MeshStandardMaterial({color:0x00ff66,emissive:0x00ff66,emissiveIntensity:0.9}));hled.position.set(-18,0.9,-6);heltec.add(hled);
+var sma=cyl(1.5,1.5,5,8,new T.MeshStandardMaterial({color:0xccaa33,metalness:0.9,roughness:0.15}));sma.rotation.set(0,0,Math.PI/2);sma.position.set(27,1,10);heltec.add(sma);
+heltec.position.set(-8,-HB/2+WL+4,-2);root.add(heltec);
+
+// === ADXL345 ===
+var acc=new T.Group();acc.name='acc';
+acc.add(mk(20,1.2,16,new T.MeshStandardMaterial({color:0x7c2a2a,roughness:0.5,metalness:0.15})));
+var accIc=mk(5,1,3,matChip);accIc.position.set(2,1.1,0);acc.add(accIc);
+for(i=0;i<6;i++){var ap=mk(0.5,3,0.5,matGold);ap.position.set(-7+i*2.2,-0.3,-6.5);acc.add(ap)}
+acc.position.set(26,-HB/2+WL+4,8);root.add(acc);
+
+// === MAX6675 ===
+var thm=new T.Group();thm.name='thm';
+thm.add(mk(20,1.2,15,new T.MeshStandardMaterial({color:0x1a3a6c,roughness:0.5,metalness:0.15})));
+var thmIc=mk(5,1.2,4,matChip);thmIc.position.set(2,1.1,1);thm.add(thmIc);
+var tb=mk(8,4,5,new T.MeshStandardMaterial({color:0x22aa44,roughness:0.4,metalness:0.2}));tb.position.set(-4,2.6,3);thm.add(tb);
+for(i=0;i<2;i++){var tsc=cyl(0.8,0.8,0.5,6,matSc);tsc.position.set(-5.5+i*3.5,4.6,3);thm.add(tsc)}
+for(i=0;i<5;i++){var tp=mk(0.5,3,0.5,matGold);tp.position.set(-5+i*2.5,-0.3,-6);thm.add(tp)}
+thm.position.set(26,-HB/2+WL+4,-8);root.add(thm);
+
+// === CABLE GLAND PG7 ===
+var gld=new T.Group();gld.name='gld';
+var gbody=cyl(4.5,4.5,8,16,new T.MeshStandardMaterial({color:0x2a2a2a,roughness:0.5,metalness:0.3}));gbody.rotation.set(Math.PI/2,0,0);gld.add(gbody);
+var gnut=cyl(6,6,3.5,6,new T.MeshStandardMaterial({color:0x555555,metalness:0.7,roughness:0.2}));gnut.rotation.set(Math.PI/2,0,0);gnut.position.set(0,0,3);gld.add(gnut);
+var ginner=cyl(2.5,2.5,3.5,12,new T.MeshStandardMaterial({color:0x2a2a2a,roughness:0.5}));ginner.rotation.set(Math.PI/2,0,0);ginner.position.set(0,0,-5);gld.add(ginner);
+gld.position.set(26,-HB/2+WL+4,-CD/2-1);root.add(gld);
+// Gland hole
+var ghole=cyl(5,5,4,16,new T.MeshBasicMaterial({color:0x08080f}));ghole.rotation.set(Math.PI/2,0,0);ghole.position.set(26,-HB/2+WL+4,-CD/2+0.5);root.add(ghole);
+
+// Wire + probe
+var wireG=new T.Group();wireG.name='gld';
+var wmat=new T.MeshStandardMaterial({color:0xdddddd,roughness:0.5,metalness:0.2});
+for(i=-1;i<=1;i++){var ws=cyl(0.4,0.4,12,6,wmat);ws.rotation.set(Math.PI/2,0,0);ws.position.set(26+i*0.6,-HB/2+WL+4,-CD/2-10);wireG.add(ws)}
+var pmat=new T.MeshStandardMaterial({color:0xcc9933,metalness:0.85,roughness:0.15});
+var pb1=cyl(3,3,7,12,pmat);pb1.rotation.set(Math.PI/2,0,0);pb1.position.set(26,-HB/2+WL+4,-CD/2-20);wireG.add(pb1);
+var pb2=cyl(2.5,2.5,5,12,pmat);pb2.rotation.set(Math.PI/2,0,0);pb2.position.set(26,-HB/2+WL+4,-CD/2-26);wireG.add(pb2);
+var pb3=cyl(1.8,1,2.5,12,pmat);pb3.rotation.set(Math.PI/2,0,0);pb3.position.set(26,-HB/2+WL+4,-CD/2-30);wireG.add(pb3);
+root.add(wireG);
+
+// === ER14505 BATTERY ===
+var bat=new T.Group();bat.name='bat';
+var cell=cyl(7,7,50,16,new T.MeshStandardMaterial({color:0x2266cc,roughness:0.35,metalness:0.1}));cell.rotation.set(0,0,Math.PI/2);bat.add(cell);
+var bcap1=cyl(3,3,1.5,8,matMetal);bcap1.rotation.set(0,0,Math.PI/2);bcap1.position.set(26,0,0);bat.add(bcap1);
+var bcap2=cyl(5,5,0.8,8,matMetal);bcap2.rotation.set(0,0,Math.PI/2);bcap2.position.set(-25.5,0,0);bat.add(bcap2);
+var bwr=cyl(0.3,0.3,8,6,new T.MeshStandardMaterial({color:0xcc2222}));bwr.rotation.set(0,0,Math.PI/2);bwr.position.set(30,0,0);bat.add(bwr);
+var bwb=cyl(0.3,0.3,8,6,new T.MeshStandardMaterial({color:0x111111}));bwb.rotation.set(0,0,Math.PI/2);bwb.position.set(-30,0,0);bat.add(bwb);
+bat.position.set(0,-HB/2+WL+12,10);root.add(bat);
+
+// === AMS1117 ===
+var reg=new T.Group();reg.name='reg';
+reg.add(mk(5,1.3,3.5,new T.MeshStandardMaterial({color:0x111111,roughness:0.3,metalness:0.4})));
+var rtab=mk(5,0.1,1.5,matMetal);rtab.position.set(0,0.7,-2);reg.add(rtab);
+for(i=0;i<3;i++){var rp=mk(0.4,0.1,2.5,matMetal);rp.position.set(-1.5+i*1.5,-0.6,2);reg.add(rp)}
+var rc1=mk(1.8,1.8,1.8,new T.MeshStandardMaterial({color:0x8B7355,roughness:0.4}));rc1.position.set(-5,0,0);reg.add(rc1);
+var rc2=mk(1.8,1.8,1.8,new T.MeshStandardMaterial({color:0x8B7355,roughness:0.4}));rc2.position.set(5,0,0);reg.add(rc2);
+reg.position.set(-28,-HB/2+WL+3,12);root.add(reg);
+
+// USB hole
+var usbH=mk(8,4,4,new T.MeshBasicMaterial({color:0x08080f}));usbH.position.set(-8,-HB/2+WL+4.5,-CD/2+0.5);root.add(usbH);
+
+// SMA hole
+var smaH=cyl(2,2,4,8,new T.MeshBasicMaterial({color:0x08080f}));smaH.rotation.set(0,0,Math.PI/2);smaH.position.set(CW/2-0.5,-HB/2+WL+4,8);root.add(smaH);
+
+// Interaction
+var drag=false,ppx=0,ppy=0,ry=0.6,rx=-0.3,try2=0.6,trx=-0.3,zm=1,tzm=1;
+var cv=ren.domElement;
+cv.addEventListener('mousedown',function(e){drag=true;ppx=e.clientX;ppy=e.clientY});
+cv.addEventListener('mousemove',function(e){if(!drag)return;try2+=(e.clientX-ppx)*0.005;trx+=(e.clientY-ppy)*0.005;trx=Math.max(-1.2,Math.min(1.2,trx));ppx=e.clientX;ppy=e.clientY});
+cv.addEventListener('mouseup',function(){drag=false});cv.addEventListener('mouseleave',function(){drag=false});
+cv.addEventListener('wheel',function(e){tzm+=e.deltaY*0.001;tzm=Math.max(0.4,Math.min(2.5,tzm))});
+cv.addEventListener('touchstart',function(e){if(e.touches.length===1){drag=true;ppx=e.touches[0].clientX;ppy=e.touches[0].clientY}});
+cv.addEventListener('touchmove',function(e){if(!drag||e.touches.length!==1)return;try2+=(e.touches[0].clientX-ppx)*0.005;trx+=(e.touches[0].clientY-ppy)*0.005;trx=Math.max(-1.2,Math.min(1.2,trx));ppx=e.touches[0].clientX;ppy=e.touches[0].clientY;e.preventDefault()},{passive:false});
+cv.addEventListener('touchend',function(){drag=false});
+
+var cc={heltec:0x00d4aa,oled:0x00aaff,acc:0xff6b6b,thm:0xffd93d,bat:0x4488ff,reg:0xcc66ff,gld:0xff8800,pcb:0x33aa55};
+var origY={};root.children.forEach(function(c){origY[c.id]={x:c.position.x,y:c.position.y,z:c.position.z}});
+
+function lerp(a,b,t){return a+(b-a)*t}
+function animate(){
+  requestAnimationFrame(animate);
+  rx=lerp(rx,trx,0.08);ry=lerp(ry,try2,0.08);zm=lerp(zm,tzm,0.08);
+  if(!drag)try2+=0.0012;
+  var d=120*zm;
+  cam.position.set(d*Math.sin(ry)*Math.cos(rx),d*Math.sin(rx)+10,d*Math.cos(ry)*Math.cos(rx));
+  cam.lookAt(0,2,0);
+  var ex=EX*35;
+  root.children.forEach(function(c){
+    var o=origY[c.id];if(!o)return;var n=c.name;
+    if(n==='lid'||n==='screw')c.position.y=lerp(c.position.y,o.y+(LID_OPEN?30:0)+ex,0.08);
+    if(n==='heltec')c.position.y=lerp(c.position.y,o.y-ex*0.2,0.06);
+    if(n==='acc'){c.position.x=lerp(c.position.x,o.x+ex*0.4,0.06);c.position.y=lerp(c.position.y,o.y+ex*0.15,0.06)}
+    if(n==='thm')c.position.z=lerp(c.position.z,o.z-ex*0.25,0.06);
+    if(n==='bat')c.position.y=lerp(c.position.y,o.y+ex*0.4,0.06);
+    if(n==='reg')c.position.y=lerp(c.position.y,o.y-ex*0.15,0.06);
+    if(n==='gld')c.position.z=lerp(c.position.z,o.z-ex*0.3,0.06);
+    if(n==='pcb')c.position.y=lerp(c.position.y,o.y-ex*0.3,0.06);
+  });
+  root.traverse(function(c){
+    if(!c.isMesh||!c.material)return;var n=c.name||(c.parent?c.parent.name:'');
+    if(n==='case'||n==='lid'||n==='screw'){c.material.wireframe=VIEW==='wire';c.material.transparent=VIEW!=='solid';c.material.opacity=VIEW==='xray'?0.08:VIEW==='wire'?0.35:1}
+    if(c.material.emissive){var hn=c.name||(c.parent?c.parent.name:'');if(hn===HL){c.material.emissive=new T.Color(cc[hn]||0xffffff);c.material.emissiveIntensity=lerp(c.material.emissiveIntensity,0.4,0.1)}else{c.material.emissiveIntensity=lerp(c.material.emissiveIntensity,0,0.1)}}
+  });
+  ren.render(scene,cam);
+}
+animate();
+window.addEventListener('resize',function(){var w=box.clientWidth,h=box.clientHeight;cam.aspect=w/h;cam.updateProjectionMatrix();ren.setSize(w,h)});
+}
+init3D();
+</script>
+</body>
+</html>
