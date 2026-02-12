@@ -85,7 +85,6 @@ body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;line
 <button class="nav-tab active" onclick="go('viewer')">3D Enclosure</button>
 <button class="nav-tab" onclick="go('tracker')">Tracker</button>
 <button class="nav-tab" onclick="go('wiring')">Wiring</button>
-<button class="nav-tab" onclick="go('compare')">vs Tractian</button>
 </div>
 </nav>
 
@@ -265,34 +264,12 @@ Não usar esses pinos para sensores!</p>
 </pre></div>
 </div></div>
 
-<!-- COMPARE -->
-<div id="compare-page" class="page"><div class="container">
-<div class="stitle" style="margin-top:16px">Seu Projeto vs Tractian Smart Trac</div>
-<table class="bt"><thead><tr><th>Spec</th><th>Smart Trac</th><th>Seu Projeto (Heltec)</th><th>Gap</th></tr></thead><tbody>
-<tr><td>Freq.Vibração</td><td>0-32kHz</td><td>ADXL345 ~1.6kHz → IIS3DWB 6.3kHz</td><td><span class="dot dy"></span>20→50%</td></tr>
-<tr><td>Aceleração</td><td>±16g</td><td>ADXL345 ±16g ✓</td><td><span class="dot dg"></span>100%</td></tr>
-<tr><td>Temperatura</td><td>-40 a +120°C</td><td>MAX6675 0-1024°C ✓</td><td><span class="dot dg"></span>100%</td></tr>
-<tr><td>Comunicação</td><td>915MHz ISM, 1km</td><td>Heltec LoRa 915MHz, 1-5km ✓</td><td><span class="dot dg"></span>95%</td></tr>
-<tr><td>Display</td><td>Via app/web</td><td>OLED 0.96" local + web</td><td><span class="dot dg"></span>🏆 bônus</td></tr>
-<tr><td>Bateria</td><td>Li, 3 anos</td><td>ER14505 2400mAh 1.5-3 anos ✓</td><td><span class="dot dg"></span>90%</td></tr>
-<tr><td>IP</td><td>IP69K</td><td>Patola selada → IP54-65</td><td><span class="dot dy"></span>60%</td></tr>
-<tr><td>FFT</td><td>32k linhas</td><td>ESP32 4096pt (firmware)</td><td><span class="dot dr"></span>0→40%</td></tr>
-<tr><td>Offline</td><td>250 coletas</td><td>SPIFFS/LittleFS</td><td><span class="dot dr"></span>0→100%</td></tr>
-<tr><td>ML</td><td>Sim</td><td>Fase 4</td><td><span class="dot dr"></span>0%</td></tr>
-<tr><td>Plataforma</td><td>Web+iOS+Android</td><td>Fase 3 Laravel</td><td><span class="dot dr"></span>0%</td></tr>
-<tr><td>Custo</td><td>R$300-500/mês</td><td>~R$260 único</td><td><span class="dot dg"></span>🏆</td></tr>
-</tbody></table>
-<div class="hbox" style="margin-top:24px;border-color:rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.05),rgba(0,102,255,.05))">
-<h3>🎯 Upgrade com Heltec</h3>
-<p>Comunicação saiu de 30% → 95% sem comprar nada. LoRa 915MHz integrado iguala o alcance do Smart Trac. OLED é bônus que a Tractian não tem no device. Custo por unidade caiu para ~R$260.</p>
-</div>
-</div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 var HL=null,EX=0,VIEW='solid',LID_OPEN=false;
 function go(p){
-  document.querySelectorAll('.nav-tab').forEach(function(t,i){t.classList.toggle('active',['viewer','tracker','wiring','compare'][i]===p)});
+  document.querySelectorAll('.nav-tab').forEach(function(t,i){t.classList.toggle('active',['viewer','tracker','wiring'][i]===p)});
   document.querySelectorAll('.page').forEach(function(s){s.classList.remove('active')});
   document.getElementById(p+'-page').classList.add('active');
   if(p==='viewer'&&!window._3d)init3D();
